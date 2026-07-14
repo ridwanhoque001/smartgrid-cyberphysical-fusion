@@ -1,0 +1,6 @@
+IS THE TEMPORAL DROP RF-SPECIFIC? (dataset 1)
+Random Forest            shuffled=0.957  rolling-origin=0.886±0.056  drop=0.070
+Hist Gradient Boosting   shuffled=0.949  rolling-origin=0.888±0.058  drop=0.061
+MLP (per-window)         shuffled=0.910  rolling-origin=0.858±0.040  drop=0.052
+TDNN (temporal)          shuffled=0.993  rolling-origin=0.875±0.074  drop=0.119
+Logistic (linear)        shuffled=0.864  rolling-origin=0.788±0.054  drop=0.076

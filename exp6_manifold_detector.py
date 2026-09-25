@@ -108,15 +108,27 @@ def se_stream(T, rng, attack=None, t0=None, start=None):
     return Xhat
 
 # ----------------------------------------------------------------------------
-# Learn the benign manifold (PCA on standardized benign states)
+# Learn the benign manifold (PCA on standardized benign ESTIMATED states)
+#
+# The manifold is fitted on the state estimates an operator actually observes
+# (WLS output on noisy measurements), NOT on the true power-flow states. Fitting
+# on true states would give the detector ground-truth information that is not
+# available in deployment, and it yields an optimistically clean subspace: on
+# this testbed the 99.9%-variance rule returns K=4 on true states but K=21 of 27
+# on estimated states. The manifold dimension is therefore selected by
+# cross-validation on benign data only (see K selection below), matching the
+# procedure used for IEEE 118-Bus in exp7c_ieee118_full.py.
 # ----------------------------------------------------------------------------
-Xtrain = Xpool.copy()
+N_FIT, L_FIT = 40, 60                            # benign estimated-state windows
+_rng_fit = np.random.default_rng(4242)
+Xtrain = np.vstack([se_stream(L_FIT, _rng_fit) for _ in range(N_FIT)])
 mu = Xtrain.mean(0); sd = np.maximum(Xtrain.std(0), 5e-3)  # floor near-constant coords
 Zc0 = ((Xtrain - mu)/sd)
 Zmean = Zc0.mean(0)
 U, Sv, Vt = np.linalg.svd(Zc0 - Zmean, full_matrices=False)
 cumvar = np.cumsum(Sv**2/np.sum(Sv**2))
-K = int(np.argmax(cumvar >= 0.999) + 1)          # manifold dimension
+K_VARRULE = int(np.argmax(cumvar >= 0.999) + 1)  # what the old 99.9% rule would pick
+K = K_VARRULE                                    # provisional; replaced by CV below
 Vk = Vt[:K]
 
 def rho(x):
@@ -166,6 +178,38 @@ def first_cross(series, H, start):
 # Calibrate benign scaling + per-detector thresholds to a common 5% FAR
 # ----------------------------------------------------------------------------
 T = 48; T0 = 24; FAR = 0.05
+
+# ----------------------------------------------------------------------------
+# Select the manifold dimension K by cross-validation on BENIGN data only.
+# For each candidate K: fit nothing new (the SVD basis is shared), calibrate the
+# manifold CUSUM threshold to the target FAR on fold A, then measure the achieved
+# FAR on held-out fold B. Pick the K whose held-out FAR is closest to target.
+# No attacked data is used at any point.
+# ----------------------------------------------------------------------------
+K_GRID = [2, 3, 4, 6, 8, 10, 12, 16, 21]
+def _mani_cusum(Xhat, Vk_, mr, sr):
+    z = (Xhat - mu)/sd - Zmean
+    r = np.linalg.norm(z - z @ Vk_.T @ Vk_, axis=1)
+    return cusum_series((r - mr)/sr, T0)
+
+_rng_cv = np.random.default_rng(909)
+_foldA = [se_stream(T, _rng_cv) for _ in range(60)]
+_foldB = [se_stream(T, _rng_cv) for _ in range(60)]
+_best = None
+for _K in K_GRID:
+    _Vk = Vt[:_K]
+    _z0 = (np.vstack(_foldA) - mu)/sd - Zmean
+    _r0 = np.linalg.norm(_z0 - _z0 @ _Vk.T @ _Vk, axis=1)
+    _mr = np.median(_r0); _sr = max(1.4826*np.median(np.abs(_r0 - _mr)), 1e-6)
+    _sa = np.array([_mani_cusum(A, _Vk, _mr, _sr)[T0:].max() for A in _foldA])
+    _H = float(np.quantile(_sa, 1 - FAR))
+    _sb = np.array([_mani_cusum(B, _Vk, _mr, _sr)[T0:].max() for B in _foldB])
+    _far = float(np.mean(_sb > _H))
+    if _best is None or abs(_far - FAR) < abs(_best[1] - FAR): _best = (_K, _far)
+K = _best[0]; Vk = Vt[:K]
+print(f"[K selection] benign CV picks K={K} (held-out FAR {_best[1]:.3f}); "
+      f"the 99.9%-variance rule would pick K={K_VARRULE}", flush=True)
+
 # reference innovation & rho scale from a benign warm-up stream
 ref0 = se_stream(120, rng)
 ang0 = np.rad2deg(ref0[:, tgt]); inn0 = holt_innov(ang0)
@@ -319,7 +363,7 @@ def main():
     ax[0].set_xscale("log"); ax[0].set_xlabel("attack ramp rate (deg/step)")
     ax[0].set_ylabel("P(detect)"); ax[0].set_ylim(-.05,1.05)
     ax[0].set_title("(a) Ramp-escape floor:\nmanifold/fused catch slow ramps temporal misses")
-    ax[0].legend(fontsize=8); ax[0].grid(alpha=.3)
+    ax[0].legend(fontsize=12); ax[0].grid(alpha=.3)
 
     ax[1].plot(biases, zres, "o-", color="#1F4E79")
     ax[1].axhline(gate, ls="--", color="#C0392B", label="3σ spatial gate")
@@ -328,7 +372,7 @@ def main():
     ax[1].set_xlabel("targeted bias (deg)")
     ax[1].set_ylabel("off-manifold residual (σ)")
     ax[1].set_title("(b) New (tighter) limit:\ntargeted bias budget under manifold gate")
-    ax[1].legend(fontsize=8); ax[1].grid(alpha=.3)
+    ax[1].legend(fontsize=12); ax[1].grid(alpha=.3)
 
     xk = np.arange(len(steps))
     for j,key in enumerate(["temporal","manifold","fused"]):
@@ -336,7 +380,7 @@ def main():
     ax[2].set_xticks(xk); ax[2].set_xticklabels([f"{s:g}°" for s in steps])
     ax[2].set_xlabel("step-bias size"); ax[2].set_ylabel("P(detect)"); ax[2].set_ylim(0,1.05)
     ax[2].set_title("(c) Step floor:\nmanifold lowers the detectable-bias floor")
-    ax[2].legend(fontsize=8); ax[2].grid(alpha=.3, axis="y")
+    ax[2].legend(fontsize=12); ax[2].grid(alpha=.3, axis="y")
     plt.tight_layout(); plt.savefig(f"{OUT}/exp6_manifold_detector.png", dpi=150)
 
     # ---------------------------------------------------------------- SAVE

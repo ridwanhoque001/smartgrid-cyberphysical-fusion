@@ -39,7 +39,7 @@ ax.plot(oo,sc,"o-",color=GR,label="rolling-origin block")
 ax.axhline(mu,ls="--",color=CY,label=f"mean {mu:.2f}$\\pm${sd:.2f}")
 ax.axhline(single,ls=":",color=RD,label=f"single 75/25 ({single:.2f})")
 ax.fill_between(oo,mu-sd,mu+sd,color=CY,alpha=0.12)
-ax.set_xlabel("train fraction (origin)"); ax.set_ylabel("macro-F1"); ax.set_ylim(0,1.05)
+ax.set_xlabel("Train fraction (origin)"); ax.set_ylabel("Macro-F1"); ax.set_ylim(0,1.05)
 ax.set_title("Rolling-origin temporal evaluation"); ax.legend(loc="lower left"); nospine(ax)
 save(fig,"rolling_origin")
 
@@ -52,8 +52,9 @@ ax.bar(x+w/2,gc,w,label="GCN ($k$-NN graph)",color=PH)
 for i in range(2):
     ax.text(x[i]-w/2,rf[i]+0.015,f"{rf[i]:.2f}",ha="center",fontsize=8)
     ax.text(x[i]+w/2,gc[i]+0.015,f"{gc[i]:.2f}",ha="center",fontsize=8)
-ax.set_xticks(x); ax.set_xticklabels(["Shuffled","Temporal"]); ax.set_ylabel("macro-F1"); ax.set_ylim(0,1.08)
-ax.set_title("RF fusion vs. topology-free GCN"); ax.legend(loc="lower right"); nospine(ax)
+ax.set_xticks(x); ax.set_xticklabels(["Shuffled","Temporal"]); ax.set_ylabel("macro-F1"); ax.set_ylim(0,1.30)
+ax.set_title("RF fusion vs. topology-free GCN")
+ax.legend(loc="upper center",bbox_to_anchor=(0.5,1.02),ncol=2,frameon=False); nospine(ax)
 save(fig,"gnn_headtohead")
 
 # 4 robustness_spectrum (known)
@@ -66,8 +67,10 @@ ax.bar(x+w/2,deff,w,label="adv. trained",color=PH)
 for i in range(4):
     ax.text(x[i]-w/2,und[i]+0.015,f"{und[i]:.2f}",ha="center",fontsize=7.5)
     ax.text(x[i]+w/2,deff[i]+0.015,f"{deff[i]:.2f}",ha="center",fontsize=7.5)
-ax.set_xticks(x); ax.set_xticklabels(labs); ax.set_ylabel("macro-F1"); ax.set_ylim(0,1.1)
-ax.set_title(r"Robustness across attack types ($\varepsilon=0.10$)"); ax.legend(loc="lower left",ncol=1); nospine(ax)
+ax.set_xticks(x); ax.set_xticklabels(labs); ax.set_ylabel("macro-F1"); ax.set_ylim(0,1.34)
+ax.set_title(r"Robustness across attack types ($\varepsilon=0.10$)")
+ax.legend(loc="upper center",bbox_to_anchor=(0.5,1.03),ncol=3,frameon=False,
+          handlelength=1.4,columnspacing=1.0); nospine(ax)
 save(fig,"robustness_spectrum")
 
 # 5 ieee14_feasible (known)
@@ -152,18 +155,14 @@ save(fig,"semantic_fusion")
 # 11 exp5_gradient_limit (WIDE 3-panel from JSON)
 j=json.load(open(R+"exp5_limit_summary.json"))
 al=[a*100 for a in j["knowledge_alpha"]]; Jb=j["knowledge_J"]
-rr=j["ramp_rates"]; delay=[np.nan if x is None else x for x in j["ramp_delay"]]
-ss=j["step_sizes"]; floor=j["step_floor"]
-fig,ax=plt.subplots(1,3,figsize=(WIDE,2.35),constrained_layout=True)
-ax[0].plot(al,Jb,"o-",color=BL); ax[0].axhline(539 if max(Jb)>200 else 70,ls="--",color=RD,label="$\\chi^2$ threshold")
-ax[0].set_xlabel("AC topology knowledge (%)"); ax[0].set_ylabel("AC $\\chi^2$ after attack")
-ax[0].set_title("(a) DC-designed FDI\nis not AC-stealthy"); ax[0].legend(); ax[0].grid(alpha=0.3); nospine(ax[0])
-ax[1].plot(rr,delay,"s-",color=GR); ax[1].set_xscale("log")
-ax[1].set_xlabel("attack ramp rate (deg/step)"); ax[1].set_ylabel("median delay (steps)")
-ax[1].set_title("(b) Detection delay\ngrows as ramp slows"); ax[1].grid(alpha=0.3); nospine(ax[1])
-ax[2].plot(ss,floor,"^-",color=PU); ax[2].set_xscale("log"); ax[2].set_ylim(-0.05,1.05)
-ax[2].set_xlabel("step-bias size (deg)"); ax[2].set_ylabel("P(temporal detect)")
-ax[2].set_title("(c) Detectability floor\nat SE-noise level"); ax[2].grid(alpha=0.3); nospine(ax[2])
+# Panels (b) ramp-delay and (c) step-floor were removed: exp6 measures both
+# quantities for ALL THREE detectors under a single calibration protocol
+# (Table ramp / Fig exp6). Reporting exp5's separately calibrated versions
+# alongside them produced contradictory numbers for the same quantity.
+fig,ax=plt.subplots(figsize=(COL,2.5),constrained_layout=True)
+ax.plot(al,Jb,"o-",color=BL); ax.axhline(539 if max(Jb)>200 else 70,ls="--",color=RD,label="$\\chi^2$ threshold")
+ax.set_xlabel("AC topology knowledge (%)"); ax.set_ylabel("AC $\\chi^2$ after attack")
+ax.set_title("DC-designed FDI is not AC-stealthy"); ax.legend(); ax.grid(alpha=0.3); nospine(ax)
 save(fig,"exp5_gradient_limit")
 
 # 12 exp6_manifold_detector (WIDE 3-panel from JSON; panel b reconstructed linear)

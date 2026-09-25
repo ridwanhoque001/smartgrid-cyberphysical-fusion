@@ -13,7 +13,7 @@ Outputs: results/ksweep.txt, results/ksweep.json, results/ksweep.png
 import os, json, sys, numpy as np
 import exp6_manifold_detector as x6
 
-OUT="results"; CKPT=f"{OUT}/exp6b_ckpt.json"
+OUT="results"; CKPT=f"{OUT}/exp6b_ckpt2.json"
 K_LIST=[1,2,3,4,6,8,10,13,16,20,27]
 KPER=int(sys.argv[1]) if len(sys.argv)>1 else 3
 NT=40                     # trials per ramp rate
@@ -76,14 +76,14 @@ for K in todo:
 if len(ck["rows"])>=len(K_LIST):
     rows=[ck["rows"][str(K)] for K in K_LIST]
     lines=["MANIFOLD DIMENSION (K) SENSITIVITY — IEEE 14-Bus, 40 trials/ramp, common 5% FAR",
-           f"benign manifold of {x6.NX} states; auto-selected K=4 by 99.9% variance rule","",
+           f"benign manifold of {x6.NX} states fitted on ESTIMATED states; K={x6.K} selected by benign cross-validation","",
            f"{'K':>3s} {'cum.var':>9s} {'meas.FAR':>9s} {'Pdet@0.05':>10s} {'Pdet@0.02':>10s}","-"*46]
     for r in rows:
         lines.append(f"{r['K']:>3d} {r['cumvar']:>9.5f} {r['far']:>9.3f} {r['pdet']['0.05']:>10.2f} {r['pdet']['0.02']:>10.2f}")
-    lines+=["","Reading: detection is flat for K>=3; K=4 (99.94% var) sits on the plateau.",
-            "Smaller K underfits the benign manifold; larger K adds noise dimensions without",
-            "improving detection. The K=4 choice is a variance-threshold rule, not an arbitrary",
-            "truncation of the 11 PQ-bus state space (comment 206)."]
+    lines+=["","Reading: the manifold is fitted on estimated states, and K is chosen by",
+            "cross-validation on benign data only. Smaller K underfits the benign manifold;",
+            "larger K adds noise dimensions without improving detection. The choice is a",
+            "calibration criterion, not an arbitrary truncation of the state space (comment 206)."]
     txt="\n".join(lines); open(f"{OUT}/ksweep.txt","w").write(txt)
     json.dump({"K_list":K_LIST,"rows":rows},open(f"{OUT}/ksweep.json","w"),indent=2)
     print("\n"+txt)
@@ -93,7 +93,7 @@ if len(ck["rows"])>=len(K_LIST):
     fig,ax=plt.subplots(figsize=(5.0,3.2))
     ax.plot(Ks,[r["pdet"]["0.05"] for r in rows],"o-",color="#8E44AD",label=r"P(detect), 0.05$^\circ$/step")
     ax.plot(Ks,[r["pdet"]["0.02"] for r in rows],"s-",color="#2E7D32",label=r"P(detect), 0.02$^\circ$/step")
-    ax.axvline(4,ls=":",color="0.5"); ax.text(4.2,0.05,"K=4 (99.9% var)",fontsize=8,color="0.4")
+    ax.axvline(x6.K,ls=":",color="0.5"); ax.text(x6.K+0.2,0.05,f"K={x6.K} (benign CV)",fontsize=8,color="0.4")
     ax.set_xlabel("Manifold dimension K"); ax.set_ylabel("Detection probability"); ax.set_ylim(0,1.05)
     ax.legend(fontsize=8,loc="lower right"); fig.tight_layout()
     fig.savefig(f"{OUT}/ksweep.png",dpi=320); print("saved results/ksweep.png")

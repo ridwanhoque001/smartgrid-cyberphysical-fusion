@@ -1,0 +1,42 @@
+======================================================================
+EXPERIMENT 6 — physics-manifold detector vs the slow-ramp evasion
+======================================================================
+IEEE-14 AC testbed | multi-load manifold dim K=6 (99.9% var) of 27 states
+benign off-manifold residual: mu=0.567 sig=0.173
+detectors calibrated to FAR=5% | measured held-out FAR: temporal=0% manifold=8% fused=8%
+thresholds: Ht=5.21 Hm=3.05 Hf=1.00
+
+[benchmark] P(detect) vs ramp rate  (horizon = 24 steps):
+  rate(deg/s)   temporal   manifold    fused
+     2.00      1.00       1.00       1.00
+     1.00      1.00       1.00       1.00
+     0.50      1.00       1.00       1.00
+     0.25      1.00       1.00       1.00
+     0.10      1.00       1.00       1.00
+     0.05      0.50       1.00       1.00
+     0.02      0.00       1.00       1.00
+  -> temporal escapes for slow ramps; manifold/fused stay high (rate-invariant).
+
+[benchmark] median detection delay (steps; blank=missed):
+  rate(deg/s)   temporal   manifold    fused
+     2.00         1         1         1
+     1.00         1         1         1
+     0.50         2         1         1
+     0.25         2         2         2
+     0.10         6         3         3
+     0.05         7         5         5
+     0.02        -          11        11
+
+[step floor] P(detect) vs step-bias size:
+  step(deg)   temporal   manifold    fused
+    1.00     1.00       1.00       1.00
+    0.50     1.00       1.00       1.00
+    0.25     0.50       1.00       1.00
+    0.10     0.25       0.75       1.00
+
+[new limit] targeted-bias budget under the manifold gate (3-sigma spatial):
+  a persistent bias becomes spatially detectable at ~0.36 deg,
+  vs the temporal-only step floor (~3 deg) and slow-ramp escape (infinite).
+  => the attacker's achievable TARGETED bias is bounded far more tightly.
+
+[ROC @ slow ramp 0.03 deg/step] AUC  temporal=0.688  manifold=1.000  fused=1.000

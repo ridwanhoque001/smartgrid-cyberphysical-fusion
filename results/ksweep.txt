@@ -1,0 +1,21 @@
+MANIFOLD DIMENSION (K) SENSITIVITY — IEEE 14-Bus, 40 trials/ramp, common 5% FAR
+benign manifold of 27 states fitted on ESTIMATED states; K=6 selected by benign cross-validation
+
+  K   cum.var  meas.FAR  Pdet@0.05  Pdet@0.02
+----------------------------------------------
+  1   0.76559     0.042       1.00       0.28
+  2   0.88012     0.000       1.00       0.72
+  3   0.91940     0.000       1.00       0.85
+  4   0.94941     0.000       1.00       1.00
+  6   0.97405     0.056       1.00       1.00
+  8   0.98540     0.000       1.00       1.00
+ 10   0.99116     0.197       1.00       1.00
+ 13   0.99550     0.000       1.00       1.00
+ 16   0.99781     0.155       1.00       1.00
+ 20   0.99923     0.000       1.00       1.00
+ 27   1.00000     0.000       0.00       0.00
+
+Reading: the manifold is fitted on estimated states, and K is chosen by
+cross-validation on benign data only. Smaller K underfits the benign manifold;
+larger K adds noise dimensions without improving detection. The choice is a
+calibration criterion, not an arbitrary truncation of the state space (comment 206).

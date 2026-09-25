@@ -1,0 +1,8 @@
+MANIFOLD-AWARE ATTACKER REBUTTAL (IEEE-14 AC testbed)
+manifold dim K = 6 of 27 non-slack states; target coord index = 2
+off-manifold fraction of a targeted single-coordinate bias: f_tgt = 0.885
+off-manifold fraction across all coords: min=0.627 mean=0.878 max=0.969
+coords with f>0.90 (targeted bias almost fully exposed): 14/27
+Interpretation: a fraction f_tgt of any targeted bias is forced off the
+benign manifold and is therefore visible to the rate-invariant test; the
+attacker cannot drive it to zero without abandoning the target coordinate.
